@@ -1,0 +1,3 @@
+torch>=2.4          # the net (az/net.py); CUDA build strongly recommended
+numpy>=1.26
+chess>=1.10         # encoder oracle in the tests; Stockfish anchors and PGN output in az.eval
