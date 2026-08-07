@@ -1,0 +1,10 @@
+__pycache__/
+build/
+runs/
+*.so
+*.pt
+*.bin
+*.zst
+*.pgn
+data/
+.vscode/
