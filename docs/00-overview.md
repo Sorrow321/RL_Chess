@@ -36,7 +36,7 @@ identical.
 
 | Phase | What | Effort | Exit criterion |
 |---|---|---|---|
-| 0 | Engine: movegen + encodings ([01](01-engine.md)) | 1–2 days | perft exact to depth 6; encode round-trips |
+| 0 | Engine: movegen + encodings ([01](01-engine.md)) | 1–2 days | perft exact to depth 6; encoding tests green |
 | 0.5 | Eval harness ([06](06-eval.md)) | 0.5 day | Elo of random-mover measured with CI |
 | 1 | Supervised bootstrap ([04](04-bootstrap.md)) | 1 night | greedy policy > 1000 Elo behavior |
 | 2 | Batched runner + net ([02](02-mcts-runner.md), [03](03-net.md)) | 1–2 days | self-play games complete, legal, ~5k games/h |

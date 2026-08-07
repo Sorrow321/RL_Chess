@@ -66,6 +66,26 @@ Python converts to fp16 on GPU. The same encoder is exposed to Python
 inference share one implementation — one source of truth, like the 2048
 `row_tbl`.
 
+**Tests (the planes' perft):** the move round-trip below is blind to
+plane bugs, so the planes get two of their own:
+
+1. **Reference equivalence.** A ~30-line pure-Python reference encoder
+   (python-chess, written straight from the table above, sharing no
+   code with the C++ one) must match `encode_batch` byte-for-byte on
+   every position of a depth-3 walk from the five perft suite
+   positions (~190k positions), plus hand-picked FENs covering all 16
+   castling-rights combinations, en passant on each file, and halfmove
+   clocks {0, 49, 99, 100}.
+2. **Color-mirror invariance.** For every position P in that walk,
+   `encode(P) == encode(mirror(P))` byte-for-byte, with python-chess
+   `Board.mirror()` as the independent oracle (carry the halfmove
+   clock over if the library resets it); and for every legal move `m`
+   of P, `move_to_index(m) == move_to_index(mirror(m))` in the
+   mirrored position. Both encoders claim "the mover's perspective";
+   this is the only test forcing them to mean the *same* flip — an
+   internal round-trip passes just as happily with rank-flipped planes
+   and rotate-180 move indices.
+
 ## Move encoding: move ↔ index (AlphaZero 8×8×73)
 
 Index = `from_square * 73 + move_type`, from the mover's perspective
@@ -89,6 +109,8 @@ position collide. This is the encoding's perft.
 - `cpp/chess_engine.cpp` (or split headers): movegen wrapper, rules/draw
   logic, both encoders, perft.
 - `tests/perft_test` binary + a script that runs the full suite.
+- `tests/encoding_test.py`: the reference-equivalence and
+  mirror-invariance tests (planes + move indices).
 - pybind11 exposure of: `legal_moves(fen)`, `push(fen, idx) -> fen'`,
   `encode_batch`, `move_to_index`/`index_to_move` — enough for Python-side
   tooling and the eval harness even before the Runner exists.
