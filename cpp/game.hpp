@@ -30,6 +30,7 @@ enum class Termination : std::uint8_t {
     THREEFOLD,
     INSUFFICIENT_MATERIAL,
     PLY_CAP,
+    RESIGN,  // produced only by the self-play runner (docs/02), never by outcome()
 };
 
 inline const char* termination_name(Termination t) {
@@ -41,6 +42,7 @@ inline const char* termination_name(Termination t) {
         case Termination::THREEFOLD: return "threefold";
         case Termination::INSUFFICIENT_MATERIAL: return "insufficient_material";
         case Termination::PLY_CAP: return "ply_cap";
+        case Termination::RESIGN: return "resign";
     }
     return "unknown";
 }
@@ -139,6 +141,11 @@ class Game {
     }
 
     [[nodiscard]] int max_plies() const noexcept { return max_plies_; }
+
+    // The raw repetition window (Zobrist keys since the last irreversible move,
+    // ending with the current position). The runner (docs/02) counts search-path
+    // repetitions against this history.
+    [[nodiscard]] const std::vector<std::uint64_t>& repetition_window() const noexcept { return repetition_; }
 
    private:
     chess::Board board_;

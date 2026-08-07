@@ -31,6 +31,20 @@
 #define AZ_HAS_ENCODING 1
 #endif
 
+// Same seam for the batched MCTS runner (docs/02): if cpp/runner.hpp exists,
+// its Runner class joins the module. It depends on the encoders.
+#if defined(AZ_HAS_ENCODING) && __has_include("runner.hpp")
+#include "runner.hpp"
+#define AZ_HAS_RUNNER 1
+#endif
+
+// And for the eval harness's single-position searcher (docs/06): cpp/eval.hpp,
+// same conditions — it is the Runner's tree driven from outside.
+#if defined(AZ_HAS_ENCODING) && __has_include("eval.hpp")
+#include "eval.hpp"
+#define AZ_HAS_EVAL 1
+#endif
+
 namespace py = pybind11;
 
 namespace {
@@ -78,7 +92,8 @@ PYBIND11_MODULE(chess_engine, m) {
         .value("FIFTY_MOVE", az::Termination::FIFTY_MOVE)
         .value("THREEFOLD", az::Termination::THREEFOLD)
         .value("INSUFFICIENT_MATERIAL", az::Termination::INSUFFICIENT_MATERIAL)
-        .value("PLY_CAP", az::Termination::PLY_CAP);
+        .value("PLY_CAP", az::Termination::PLY_CAP)
+        .value("RESIGN", az::Termination::RESIGN);
 
     py::class_<az::Outcome>(m, "Outcome")
         .def_readonly("reason", &az::Outcome::reason)
@@ -150,6 +165,23 @@ PYBIND11_MODULE(chess_engine, m) {
         .def("legal_moves", [](const az::Game& g) { return uci_list(g.board()); })
         .def("push", [](az::Game& g, const std::string& uci) { g.push(move_from_uci(g.board(), uci)); },
              py::arg("uci"))
+        // Replay path for the runner's example dumps (docs/02): moves there are
+        // stored library-native. Resolved against the legal movelist so a
+        // corrupt dump raises instead of corrupting the board.
+        .def(
+            "push_u16",
+            [](az::Game& g, std::uint16_t move) {
+                chess::Movelist moves;
+                chess::movegen::legalmoves(moves, g.board());
+                for (const auto& m : moves) {
+                    if (m.move() == move) {
+                        g.push(m);
+                        return;
+                    }
+                }
+                throw std::invalid_argument("illegal move code " + std::to_string(move) + " in position " + g.fen());
+            },
+            py::arg("move"), "Play a legal move given in the library's native u16 encoding (see Runner examples).")
         .def("outcome", &az::Game::outcome)
         .def("repetition_count", &az::Game::repetition_count)
         .def("__repr__", [](const az::Game& g) {
@@ -158,5 +190,11 @@ PYBIND11_MODULE(chess_engine, m) {
 
 #ifdef AZ_HAS_ENCODING
     az::register_encoding_bindings(m);
+#endif
+#ifdef AZ_HAS_RUNNER
+    az::register_runner_bindings(m);
+#endif
+#ifdef AZ_HAS_EVAL
+    az::register_eval_bindings(m);
 #endif
 }
