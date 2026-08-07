@@ -1,0 +1,24 @@
+Disservin/chess-library
+https://github.com/Disservin/chess-library
+commit 53e6a841dcda7059a2af363d85f785ef1817304a (master, vendored 2026-08-07)
+License: MIT (see LICENSE)
+
+Selection (docs/01-engine.md "wire up perft for 2-3 candidates, pick one"),
+measured on this box, same 5-position suite, bulk-counted, single-threaded,
+-O3 -march=native, 442,133,692 nodes total:
+
+  chess-library  0.78 s   569 Mn/s
+  surge          0.85 s   522 Mn/s   (nkarve/surge @ 184e59f)
+
+Speed was a tie; API friction decided it. surge does not compile on GCC 11
+without patches (`extern constexpr` definitions, a missing <cstring>, and an
+`extern inline` scheme that only links as a single translation unit), templates
+the side to move as a compile-time parameter — every runtime call site needs its
+own dispatch — and ships no FEN output, no Zobrist-based repetition, and no draw
+detection. chess-library gives us all of those plus SAN/UCI I/O in one header.
+Cross-check beyond the suite: startpos depth 7 = 3,195,901,860, exact.
+
+Vendored as a single header rather than a submodule: it is one self-contained
+file, and pinning the exact bytes we perft-validated matters more here than
+easy upstream pulls. To update: drop in the new chess.hpp, bump the commit
+above, and re-run tests/run_perft.sh — the full suite must stay exact.
